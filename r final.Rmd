@@ -1,0 +1,330 @@
+Title: "Statistics Project phase 1"
+Author: Vidya
+output: html_notebook
+
+
+R version 4.2.2
+
+RStudio 2022.12.0+353 "Elsbeth Geranium" Release (7d165dcfc1b6d300eb247738db2c7076234f6ef0, 2022-12-03) for Windows
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) RStudio/2022.12.0+353 Chrome/102.0.5005.167 Electron/19.1.3 Safari/537.36
+
+Packages: ggplot2,dplyr,plotly
+Hence, before using these library we need to install these packages
+install.packages(ggplot2)
+install.packages(dplyr)
+install.packages(plotly)
+install.packages(patchwork)
+
+This analysis will be based on the dataset that contains information of 1465 Amazon products, ratings and reviews, as reported on the company's official website.
+https://drive.google.com/drive/folders/1O5ybNrX_kAPskp_gVVlxbvNIE6GtPbxV
+
+
+Data preprocessing:-
+As there are lot of categories we need to reduce them into main categories. To acheive this we have used =LEFT(C2, FIND("|", C2, FIND("|", C2)+1)-1) formula to create a new column called main_category which is used to vizualize the sales data in each category.
+
+
+---
+
+```{r}
+
+#importing a ggplot2 library
+library(ggplot2)
+library(plotly)
+library(dplyr)
+
+```
+
+```{r}
+
+#reading a csv file from excel
+
+amazon<-read.csv("a2.csv")
+#Data preprocesing
+amazon$discounted_price <- gsub("[^0-9]", "", amazon$discounted_price)
+amazon$actual_price <- gsub("[^0-9]", "", amazon$actual_price)
+amazon$rating_count <- gsub("[^0-9]", "", amazon$rating_count)
+amazon$discount_percentage <- gsub("[^0-9]", "", amazon$discount_percentage)
+
+```
+
+```{r}
+
+#1
+
+#@author Vidya
+#@returns A histogram which displays the total number of ratings
+#@sample run load variable and execute ggplot snippet
+
+variable <- amazon$rating
+ggplot(data.frame(variable), aes(variable)) +
+  geom_bar(stat = "count",fill = "cyan4",color = "white") +
+  labs(x = "RATING",y = "FREQUENCY",
+  title = "RANGE OF RATING FROM 1 TO 5",
+  caption = "Bar graph showing the distribution of 'Rating' over the range 1 to 5. People have given 4.1 rating 250 times, followed by 4.2 & 4.3 around 225 times ")+ 
+theme(plot.title = element_text(face  = "bold", hjust = 0.5),
+  plot.caption = element_text(hjust = 0.5, color = "gray27"),
+  panel.grid = element_blank(),
+  panel.background = element_rect(fill = "white"),
+  axis.text.x = element_text(color = "darkslategray4"),
+  axis.text.y = element_text(color = "darkslategray4"))
+```
+
+```{r}
+
+#1
+
+#@returns A density plot which displays the density of ratings
+#@sample run load variable and execute ggplot snippet
+
+#there is NA value in the rating(to avoid repetition used 'rate' instead of 'rating' )
+rate<-as.numeric(amazon$rating)
+
+# checking the datatype of rate
+typeof(rate)
+
+#replacing the NA value with 0
+rate<-replace(rate,is.na(rate),0)
+table(is.na(rate))
+
+#Density displaying rating
+ggplot(amazon, aes(x=rate)) +
+  geom_density()+
+  labs(y= "Density",x="Rating",
+       title = "HIGHEST DENSITY OF RATING",
+       caption = "The Graph Shows Rating as a Density Plot") +
+theme(plot.title = element_text(face  = "bold", 
+                                hjust = 0.5, 
+                                color = "pink3"),
+      panel.background = element_rect(fill = "white"),
+      panel.grid.minor = element_line(color = "pink3"),
+      plot.caption = element_text(color = "pink3", 
+                                  hjust = 0.5))
+```
+
+```{r}
+
+#2
+#@returns A pie chart which displays the highest selling product and its share
+#@sample run load variable and execute ggplot snippet
+
+
+# calculate percentages for each main_category
+prop_table <-amazon %>% count(main_category) %>%   mutate(props = n / sum(n))
+ggplot(prop_table) +
+  geom_bar(aes(x = "", y = props, fill = main_category),width = 1,stat = "identity") +
+  coord_polar("y", start = 0) +
+  labs(x = "",y = "",
+  title = "Top selling product categories and their percentage share",
+  caption = "Different Product Categories displayed as a Pie Diagram") +
+theme(plot.title = element_text(face  = "bold",hjust = -0.1,color = "dodgerblue4"),
+  plot.caption = element_text(hjust = 0.5, color = "dodgerblue4"),
+  panel.grid = element_blank(),
+  panel.background = element_rect(fill = "white"),
+  legend.text = element_text(color = "dodgerblue4"),
+  legend.position = "right",
+  legend.title = element_blank()) +
+  guides(fill = guide_legend(title = "main category")) +
+  scale_fill_discrete(labels = paste(prop_table$main_category,
+  scales::percent(prop_table$props),sep = " - "))
+
+
+```
+
+```{r}
+
+#2
+#@returns A bar plot which displays the total product sold in each category 
+#@sample run load variable and execute ggplot snippet
+#bar chart of category and sales in each category
+
+ggplot(data = amazon) +
+  geom_bar(mapping = aes(x = main_category),
+           fill = 'steelblue') +
+  labs(x = "",y = "",title = "NUMBER OF RATINGS IN EACH CATEGORY",
+  caption = "Bar Graph Depicting Total Count of Rating in Each Category") +
+theme(plot.title = element_text(face  = "bold",
+                                hjust = 0.5,
+                                color = "steelblue4"),
+  plot.caption = element_text(hjust = 0.5, 
+                              color = "steelblue4"),
+  axis.text.x = element_text(angle = 45,
+                             hjust = 1,
+                             color = "steelblue2"),
+  axis.text.y = element_text(color = "steelblue2"),
+  panel.grid.minor = element_line(color = "pink3"),
+  panel.background = element_rect(fill = "white"))
+```
+
+```{r}
+
+#3
+#@returns A point plot which displays discounted percentage and rating for each category
+#@sample run load variable and execute ggplot snippet
+#enhance the grapgh to full screen to view all percentage
+ggplot(data = amazon,mapping = aes(x = discount_percentage , 
+                                   y = rating, 
+                                   color = main_category)) +
+  geom_point() +  
+  theme(axis.text.x = element_text(angle = 90,
+                                   vjust = 0.5,
+                                   hjust = 1)) +
+  scale_y_discrete(breaks = seq(0, 5, 0.5)) +
+  labs(x = "DISCOUNT PERCENTAGE",y = "RATING",
+  title = "DISCOUNT PERCENTAGE INFLUENCING RATING OF EACH PRODUCT CATEGORY",
+  caption = "Point Graph Showing the Relationship between Discount Percentage & Each Product category") +
+theme(plot.title = element_text(face  = "bold",
+                                hjust = 0.5,
+                                color = "hotpink4"),
+  plot.caption = element_text(hjust = 0.5 , 
+                              color = "hotpink4"),
+  panel.grid = element_blank(),
+  panel.background = element_rect(fill = "white"),
+  axis.text.x = element_text(size=5,
+                             angle = 90, 
+                             color = "steelblue"),
+  axis.text.y = element_text(color = "hotpink4"),
+  legend.text = element_text(color = "hotpink4"))
+```
+```{r}
+#3
+#@returns A scatter plot which displays category and its rating
+#@sample run load variable and execute ggplot snippet
+#enhance the grapgh to full screen to view all percentage
+ggplot(data = amazon) +
+ geom_bin2d(mapping = aes(x = main_category, 
+                          y = rating))+
+ labs(x = "", y = "",
+ title = "TOTAL COUNT IN PRODUCT CATEGORY",
+ caption = "Scatter Plot made with Product Category Against the Rating Count") +
+theme(plot.title = element_text(face = "bold", 
+                                hjust = 0.5, 
+                                color = "steelblue4"),
+ plot.caption = element_text(hjust = 0.5, 
+                             color = "steelblue4"),
+ axis.text.x = element_text(angle = 90, 
+                            vjust = 0.5, 
+                            hjust=1, 
+                            color = "steelblue2"),
+ axis.text.y = element_text(color = "steelblue2"),
+ panel.background = element_rect(fill = "white"),
+ legend.position = "top")
+```
+
+```{r}
+#4
+#@returns A bar plot which displays the product category filled with rating
+#@sample run load variable and execute ggplot snippet
+
+ggplot(data = amazon) +
+  geom_bar(mapping = aes(x = main_category, 
+                         fill = rating)) +
+  labs(x = "",y = "",
+  title = "PRODUCT CATEGORY ACCORDING THEIR RATING COUNT",
+  caption = "Bar Chart Displaying Relationship between Product Category & Rating Coungt Filled with Rating") +
+theme(axis.text.x = element_text(angle = 45,
+                                 hjust = 1,
+                                 color = "slateblue1"),
+  axis.text.y = element_text(color = "slateblue1"),
+  plot.title = element_text(face = "bold",
+                            hjust = 0.5,
+                            color = "slateblue4"),
+  plot.caption = element_text(hjust = 0.5, 
+                              color = "slateblue4"),
+  legend.text = element_text(color = "slateblue4"),
+  panel.grid.major = element_line(color = "seashell2"),
+  panel.background = element_rect(fill = "white"))
+
+```
+
+```{r}
+
+#4
+#@returns A bar plot which displays the max discount percentage in each category
+#@sample run load variable and execute ggplot snippet
+
+
+max_discount <-amazon %>%  group_by(main_category) %>%   summarise(max_discount = max(discount_percentage, na.rm = TRUE))
+max_dis<-ggplot(max_discount, mapping = aes(x = main_category, y = max_discount)) +
+  geom_bar(stat = "identity",fill = "tan") +
+  labs(x = " ",title = "Maximum discount percentage in each product category",
+  caption = "Bar Graph of Product Category with Maximum Discount displaying relation between two variables") +
+theme(axis.text.x = element_text(angle = 45,vjust = 0.8,hjust = 1),
+  plot.title = element_text(face = "bold",hjust = 0.5,color = "tan4"),
+  plot.caption = element_text(hjust = 0.5, color = "tan4"),
+  axis.text.y = element_text(color = "tan4"),
+  panel.grid = element_blank(),
+  panel.background = element_rect(fill = "white"))
+ggplotly(max_dis)
+```
+
+```{r}
+#5
+#@returns A point plot which displays the price between product category on rating
+#@sample run load variable and execute ggplot snippet
+
+t <- ggplot(amazon,
+            mapping = aes(discounted_price, actual_price,
+                          color = main_category)) +
+  geom_point()
+
+t + facet_grid(cols = vars(rating),
+               rows = vars(main_category)) +
+  labs(title = "PRICE AMONGST PRODUCT CATEGORIES REFLECTING ON THE RATING",
+       caption = "Difference between Discounted Price & Actual Price with respect to the Product Category and it's Rating") +
+  theme(
+    plot.title = element_text(
+      face = "bold",
+      hjust = 0.5,
+      color = "thistle4"
+    ),
+    plot.caption = element_text(
+      hjust = 0.5,
+      color = "thistle4",
+      face = "italic"
+    ),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    strip.text = element_text(size = 6),
+    legend.position = "bottom"
+  )
+```
+
+```{r}
+
+#6
+#@returns A bar interactive plot which displays rating and sales per each category
+#@sample run load variable and execute ggplot snippet
+#Hover over each bars to display sales counts and rating for each category
+
+
+vi <- ggplot(amazon, aes(main_category)) +
+  geom_bar(aes(fill = rating)) +
+  labs(
+    x = " ",
+    title = "Interactive plot
+           displaying the sales figures along with rating for each category",
+    caption = " bar graph interactive"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45,  hjust = 1),
+    plot.title = element_text(
+      face = "bold",
+      hjust = 0.5,
+      color = "tan4"
+    ),
+    plot.caption = element_text(hjust = 0.5, color = "tan4"),
+    axis.text.y = element_text(color = "tan4"),
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "white")
+  )
+
+ggplotly(vi)
+```
+
+
+REFERENCES:-
+[1]“Data Mentor,” DataMentor, Nov. 23, 2017. https://www.datamentor.io/r-programming/box-plot/
+[2]“Colors in R.” Available: http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf
+[3]“ggplot2 package - RDocumentation,” www.rdocumentation.org. https://www.rdocumentation.org/packages/ggplot2/versions/3.4.1
+[4]“Package ‘ggplot2’ Title Create Elegant Data Visualisations Using the Grammar of Graphics,” 2020. Available: https://cran.r-project.org/web/packages/ggplot2/ggplot2.pdf
+[5] A. Misiuro, “What is Data Visualization | Top Data Visualization Tools,” Synder blog, Jun. 17, 2022. https://synder.com/blog/what-is-data-visualization/ 
