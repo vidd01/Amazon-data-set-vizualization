@@ -1,6 +1,8 @@
-Title: "Statistics Project phase 1"
+Title: "Amazon dataset vizualization"
+
 Author: Vidya
-output: html_notebook
+
+Output: html_notebook
 
 
 R version 4.2.2
